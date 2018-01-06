@@ -73,6 +73,33 @@ Pos.prototype.rotate = function(rot) {
     }
 }
 
+// Only works with 3D positions right now.
+// The range of each coordinate should be from -1 to 1.
+Pos.prototype.convertToColor = function() {
+    var tempRed = 64 + Math.round((this.coords[0] + 1) * 65);
+    var tempGreen = 64 + Math.round((this.coords[1] + 1) * 64);
+    var tempBlue = 64 + Math.round((this.coords[2] + 1) * 64);
+    if (tempRed < 64) {
+        tempRed = 64;
+    }
+    if (tempRed > 192) {
+        tempRed = 192;
+    }
+    if (tempGreen < 64) {
+        tempGreen = 64;
+    }
+    if (tempGreen > 192) {
+        tempGreen = 192;
+    }
+    if (tempBlue < 64) {
+        tempBlue = 64;
+    }
+    if (tempBlue > 192) {
+        tempBlue = 192;
+    }
+    return "rgb(" + tempRed + ", " + tempGreen + ", " + tempBlue + ")";
+}
+
 // May be 2D, 3D, or 4D.
 function Rot(angles) {
     this.angles = angles;
@@ -114,6 +141,7 @@ viewRotDirection = new Rot([0, 0, 0]);
 
 function Voxel(pos) {
     this.pos = pos;
+    this.color = this.pos.convertToColor();
     this.viewPos = this.pos.copy();
     voxelList.push(this);
 }
@@ -136,7 +164,7 @@ Voxel.prototype.draw = function() {
         voxelPixelSize,
         voxelPixelSize
     );
-    context.fillStyle = "#888888";
+    context.fillStyle = this.color;
     context.fillRect(
         Math.round(tempPosX - voxelPixelSize / 2 + voxelPixelBorderSize),
         Math.round(tempPosY - voxelPixelSize / 2 + voxelPixelBorderSize),
