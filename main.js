@@ -6,7 +6,7 @@ var framesPerSecond = 10;
 var canvasSize = 800;
 var canvas;
 var context;
-var voxelPixelSize = 30;
+var voxelPixelSize = 22;
 var voxelList = [];
 var viewRot;
 var viewRotDirection;
@@ -14,7 +14,8 @@ var shouldRedrawVoxels = true;
 var hypercubeRot;
 var hypercubeOffset = 0;
 var voxelGenerationRange = 2;
-var voxelGenerationResolution = 0.125;
+var voxelGenerationResolution = 0.0625;
+var dummyVoxel;
 
 // May be 2D, 3D, or 4D.
 function Pos(coords) {
@@ -47,6 +48,20 @@ Pos.prototype.scale = function(value) {
         this.coords[index] *= value;
         index += 1;
     }
+}
+
+Pos.prototype.equals = function(pos) {
+    if (this.coords.length != pos.coords.length) {
+        return false;
+    }
+    var index = 0;
+    while (index < this.coords.length) {
+        if (this.coords[index] != pos.coords[index]) {
+            return false;
+        }
+        index += 1;
+    }
+    return true;
 }
 
 Pos.prototype.rotateInPlane = function(index1, index2, angle) {
@@ -121,7 +136,7 @@ Pos.prototype.isNearHypercubeFace = function() {
     var index = 0;
     while (index < this.coords.length) {
         var tempValue = this.coords[index];
-        if (Math.abs(tempValue) > 0.8) {
+        if (Math.abs(tempValue) > 0.9) {
             tempCount += 1;
         }
         index += 1;
@@ -194,6 +209,22 @@ function Voxel(pos, color) {
     voxelList.push(this);
 }
 
+Voxel.prototype.isDummy = function() {
+    return false;
+}
+
+Voxel.prototype.remove = function() {
+    var index = 0;
+    while (index < voxelList.length) {
+        var tempVoxel = voxelList[index];
+        if (this == tempVoxel) {
+            voxelList.splice(index, 1);
+            break;
+        }
+        index += 1;
+    }
+}
+
 Voxel.prototype.resolveViewPos = function() {
     this.viewPos.set(this.pos);
     this.viewPos.rotate(viewRot);
@@ -213,6 +244,16 @@ Voxel.prototype.draw = function() {
         voxelPixelSize
     );
 }
+
+function DummyVoxel() {
+    // Do nothing.
+}
+
+DummyVoxel.prototype.isDummy = function() {
+    return true;
+}
+
+dummyVoxel = new DummyVoxel();
 
 function resolveEveryVoxelViewPos() {
     var index = 0;
@@ -253,6 +294,95 @@ function drawAllVoxels() {
 
 function regenerateVoxels() {
     voxelList = [];
+    var voxelMap = [];
+    var voxelMapSize = voxelGenerationRange * 2 / voxelGenerationResolution;
+    function convertPosToVoxelMapIndex(pos) {
+        return pos.coords[0] + pos.coords[1] * voxelMapSize + pos.coords[2] * voxelMapSize * voxelMapSize;
+    }
+    function posIsInVoxelMap(pos) {
+        var index = 0;
+        while (index < 3) {
+            var tempValue = pos.coords[index];
+            if (tempValue < 0 || tempValue >= voxelMapSize) {
+                return false;
+            }
+            index += 1;
+        }
+        return true;
+    }
+    function getVoxelMapItem(pos) {
+        if (!posIsInVoxelMap(pos)) {
+            return null;
+        }
+        var index = convertPosToVoxelMapIndex(pos);
+        var output = voxelMap[index];
+        if (typeof output === "undefined") {
+            output = null;
+        }
+        return output;
+    }
+    function setVoxelMapItem(pos, item) {
+        if (!posIsInVoxelMap(pos)) {
+            return;
+        }
+        var index = convertPosToVoxelMapIndex(pos);
+        voxelMap[index] = item;
+    }
+    function getVoxelNeighborCount(pos) {
+        var output = 0;
+        var tempPos = new Pos([0, 0, 0]);
+        var tempOffset = new Pos([-1, -1, -1]);
+        while (true) {
+            tempPos.set(pos);
+            tempPos.add(tempOffset);
+            if (!tempPos.equals(pos)) {
+                var tempVoxel = getVoxelMapItem(tempPos);
+                if (tempVoxel !== null) {
+                    output += 1;
+                }
+            }
+            tempOffset.coords[0] += 1;
+            if (tempOffset.coords[0] > 1) {
+                tempOffset.coords[0] = -1;
+                tempOffset.coords[1] += 1;
+                if (tempOffset.coords[1] > 1) {
+                    tempOffset.coords[1] = -1;
+                    tempOffset.coords[2] += 1;
+                    if (tempOffset.coords[2] > 1) {
+                        break;
+                    }
+                }
+            }
+        }
+        return output;
+    }
+    function pruneVoxelMap() {
+        var tempOffset = new Pos([0, 0, 0]);
+        while (true) {
+            var tempVoxel = getVoxelMapItem(tempOffset);
+            if (tempVoxel !== null) {
+                if (!tempVoxel.isDummy()) {
+                    var tempCount = getVoxelNeighborCount(tempOffset);
+                    if (tempCount >= 26) {
+                        tempVoxel.remove();
+                        setVoxelMapItem(tempOffset, dummyVoxel);
+                    }
+                }
+            }
+            tempOffset.coords[0] += 1;
+            if (tempOffset.coords[0] > voxelMapSize) {
+                tempOffset.coords[0] = 0;
+                tempOffset.coords[1] += 1;
+                if (tempOffset.coords[1] > voxelMapSize) {
+                    tempOffset.coords[1] = 0;
+                    tempOffset.coords[2] += 1;
+                    if (tempOffset.coords[2] > voxelMapSize) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
     var voxelGenerationAxisList = [];
     var index = 0;
     while (index < 4) {
@@ -263,20 +393,18 @@ function regenerateVoxels() {
         voxelGenerationAxisList.push(tempAxis);
         index += 1;
     }
-    var voxelGenerationOffset = new Pos([
-        -voxelGenerationRange,
-        -voxelGenerationRange,
-        -voxelGenerationRange
-    ]);
+    var voxelGenerationOffset = new Pos([0, 0, 0]);
     var tempPos = new Pos([0, 0, 0, 0]);
     var tempOffset = new Pos([0, 0, 0, 0]);
+    var tempVoxelPos = new Pos([0, 0, 0]);
     while (true) {
         tempPos.set(voxelGenerationAxisList[3]);
         tempPos.scale(hypercubeOffset);
         var index = 0;
         while (index < 3) {
+            tempVoxelPos.coords[index] = voxelGenerationOffset.coords[index] * voxelGenerationResolution - voxelGenerationRange;
             tempOffset.set(voxelGenerationAxisList[index]);
-            tempOffset.scale(voxelGenerationOffset.coords[index]);
+            tempOffset.scale(tempVoxelPos.coords[index]);
             tempPos.add(tempOffset);
             index += 1;
         }
@@ -287,16 +415,20 @@ function regenerateVoxels() {
             } else {
                 tempColor = null;
             }
-            new Voxel(voxelGenerationOffset.copy(), tempColor);
+            var tempVoxel = new Voxel(tempVoxelPos.copy(), tempColor);
+            setVoxelMapItem(voxelGenerationOffset, tempVoxel);
+        } else {
+            setVoxelMapItem(voxelGenerationOffset, null);
         }
-        voxelGenerationOffset.coords[0] += voxelGenerationResolution;
-        if (voxelGenerationOffset.coords[0] > voxelGenerationRange) {
-            voxelGenerationOffset.coords[0] = -voxelGenerationRange;
-            voxelGenerationOffset.coords[1] += voxelGenerationResolution;
-            if (voxelGenerationOffset.coords[1] > voxelGenerationRange) {
-                voxelGenerationOffset.coords[1] = -voxelGenerationRange;
-                voxelGenerationOffset.coords[2] += voxelGenerationResolution;
-                if (voxelGenerationOffset.coords[2] > voxelGenerationRange) {
+        voxelGenerationOffset.coords[0] += 1;
+        if (voxelGenerationOffset.coords[0] > voxelMapSize) {
+            voxelGenerationOffset.coords[0] = 0;
+            voxelGenerationOffset.coords[1] += 1;
+            if (voxelGenerationOffset.coords[1] > voxelMapSize) {
+                pruneVoxelMap();
+                voxelGenerationOffset.coords[1] = 0;
+                voxelGenerationOffset.coords[2] += 1;
+                if (voxelGenerationOffset.coords[2] > voxelMapSize) {
                     break;
                 }
             }
