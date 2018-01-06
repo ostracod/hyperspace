@@ -2,7 +2,7 @@
 // Good reference:
 // http://eusebeia.dyndns.org/4d/vis/10-rot-1
 
-var framesPerSecond = 30;
+var framesPerSecond = 10;
 var canvasSize = 800;
 var canvas;
 var context;
@@ -11,6 +11,9 @@ var voxelPixelBorderSize = 4;
 var voxelList = [];
 var viewRot;
 var viewRotDirection;
+var shouldRedrawVoxels = true;
+var hypercubeRot;
+var hypercubeOffset = 0;
 
 // May be 2D, 3D, or 4D.
 function Pos(coords) {
@@ -136,8 +139,23 @@ Rot.prototype.isZero = function() {
     return true;
 }
 
+Rot.prototype.equals = function(rot) {
+    if (this.angles.length != rot.angles.length) {
+        return false;
+    }
+    var index = 0;
+    while (index < this.angles.length) {
+        if (this.angles[index] != rot.angles[index]) {
+            return false;
+        }
+        index += 1;
+    }
+    return true;
+}
+
 viewRot = new Rot([0, 0, 0]);
 viewRotDirection = new Rot([0, 0, 0]);
+hypercubeRot = new Rot([0, 0, 0, 0, 0, 0]);
 
 function Voxel(pos) {
     this.pos = pos;
@@ -208,6 +226,39 @@ function drawAllVoxels() {
         var tempVoxel = voxelList[index];
         tempVoxel.draw();
         index += 1;
+    }
+}
+
+function resetViewRot() {
+    viewRot.angles[0] = 0;
+    viewRot.angles[1] = 0;
+    viewRot.angles[2] = 0;
+    shouldRedrawVoxels = true;
+}
+
+function sliderChangeEvent() {
+    var tempAngleList = [];
+    var index = 0;
+    while (index < 6) {
+        var tempAngle = document.getElementById("angle" + index + "Slider").value;
+        tempAngleList.push(tempAngle);
+        document.getElementById("angle" + index + "Label").innerHTML = tempAngle;
+        index += 1;
+    }
+    var tempRot = new Rot(tempAngleList);
+    var tempOffset = document.getElementById("offsetSlider").value;
+    if (!hypercubeRot.equals(tempRot) || hypercubeOffset != tempOffset) {
+        hypercubeRot = tempRot;
+        hypercubeOffset = tempOffset;
+        var index = 0;
+        while (index < 6) {
+            var tempAngle = tempAngleList[index];
+            document.getElementById("angle" + index + "Label").innerHTML = tempAngle;
+            index += 1;
+        }
+        document.getElementById("offsetLabel").innerHTML = tempOffset;
+        // TODO: Generate cross section voxels.
+        
     }
 }
 
@@ -282,9 +333,13 @@ function keyUpEvent(event) {
 function timerEvent() {
     if (!viewRotDirection.isZero()) {
         var tempOffset = viewRotDirection.copy();
-        tempOffset.scale(0.03);
+        tempOffset.scale(0.1);
         viewRot.add(tempOffset);
+        shouldRedrawVoxels = true;
+    }
+    if (shouldRedrawVoxels) {
         drawAllVoxels();
+        shouldRedrawVoxels = false;
     }
 }
 
@@ -311,7 +366,8 @@ function initializeApplication() {
     new Voxel(new Pos([1, -1, 1]));
     new Voxel(new Pos([-1, 1, 1]));
     new Voxel(new Pos([1, 1, 1]));
-    drawAllVoxels();
+    
+    sliderChangeEvent();
     
 }
 

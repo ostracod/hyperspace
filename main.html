@@ -1,11 +1,54 @@
 <html>
     <head>
         <script src="main.js"></script>
+        <style>
+
+.slider {
+    width: 400px;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+        </style>
     </head>
     <body>
         <h2>HYPERCUBE VISUALIZATION</h2>
         <p>
+            3D cross section of the hypercube:
+        </p>
+        <p>
             <canvas id="canvas" style="border: 1px #000000 solid;">
+        </p>
+        <p>
+            Use WASDQE to rotate the view. <button onclick="resetViewRot();">Reset View Rotation</button>
+        </p>
+        <p>
+            <input id="angle0Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            WX angle: <span id="angle0Label">0</span> rad
+        </p>
+        <p>
+            <input id="angle1Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            WY angle: <span id="angle1Label">0</span> rad
+        </p>
+        <p>
+            <input id="angle2Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            WZ angle: <span id="angle2Label">0</span> rad
+        </p>
+        <p>
+            <input id="angle3Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            XY angle: <span id="angle3Label">0</span> rad
+        </p>
+        <p>
+            <input id="angle4Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            XZ angle: <span id="angle4Label">0</span> rad
+        </p>
+        <p>
+            <input id="angle5Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            YZ angle: <span id="angle5Label">0</span> rad
+        </p>
+        <p>
+            <input id="offsetSlider" type="range" min="-1" max="1" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
+            Cross section offset: <span id="offsetLabel">0</span>
         </p>
         <script>
 
