@@ -7,7 +7,6 @@ var canvasSize = 800;
 var canvas;
 var context;
 var voxelPixelSize = 30;
-var voxelPixelBorderSize = 4;
 var voxelList = [];
 var viewRot;
 var viewRotDirection;
@@ -117,6 +116,19 @@ Pos.prototype.isInHypercube = function() {
     return true;
 }
 
+Pos.prototype.isNearHypercubeFace = function() {
+    var tempCount = 0;
+    var index = 0;
+    while (index < this.coords.length) {
+        var tempValue = this.coords[index];
+        if (Math.abs(tempValue) > 0.8) {
+            tempCount += 1;
+        }
+        index += 1;
+    }
+    return (tempCount >= 2);
+}
+
 // May be 2D, 3D, or 4D.
 function Rot(angles) {
     this.angles = angles;
@@ -171,9 +183,13 @@ viewRot = new Rot([0, 0, 0]);
 viewRotDirection = new Rot([0, 0, 0]);
 hypercubeRot = new Rot([0, 0, 0, 0, 0, 0]);
 
-function Voxel(pos) {
+function Voxel(pos, color) {
     this.pos = pos;
-    this.color = this.pos.convertToColor();
+    if (color === null) {
+        this.color = this.pos.convertToColor();
+    } else {
+        this.color = color;
+    }
     this.viewPos = this.pos.copy();
     voxelList.push(this);
 }
@@ -189,19 +205,12 @@ Voxel.prototype.resolveViewPos = function() {
 Voxel.prototype.draw = function() {
     var tempPosX = this.viewPos.coords[0];
     var tempPosY = this.viewPos.coords[1];
-    context.fillStyle = "#000000";
+    context.fillStyle = this.color;
     context.fillRect(
         Math.round(tempPosX - voxelPixelSize / 2),
         Math.round(tempPosY - voxelPixelSize / 2),
         voxelPixelSize,
         voxelPixelSize
-    );
-    context.fillStyle = this.color;
-    context.fillRect(
-        Math.round(tempPosX - voxelPixelSize / 2 + voxelPixelBorderSize),
-        Math.round(tempPosY - voxelPixelSize / 2 + voxelPixelBorderSize),
-        voxelPixelSize - voxelPixelBorderSize * 2,
-        voxelPixelSize - voxelPixelBorderSize * 2
     );
 }
 
@@ -272,7 +281,13 @@ function regenerateVoxels() {
             index += 1;
         }
         if (tempPos.isInHypercube()) {
-            new Voxel(voxelGenerationOffset.copy());
+            var tempColor;
+            if (tempPos.isNearHypercubeFace()) {
+                tempColor = "#000000";
+            } else {
+                tempColor = null;
+            }
+            new Voxel(voxelGenerationOffset.copy(), tempColor);
         }
         voxelGenerationOffset.coords[0] += voxelGenerationResolution;
         if (voxelGenerationOffset.coords[0] > voxelGenerationRange) {
