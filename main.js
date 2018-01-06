@@ -2,7 +2,6 @@
 // Good reference:
 // http://eusebeia.dyndns.org/4d/vis/10-rot-1
 
-var framesPerSecond = 10;
 var canvasSize = 800;
 var canvas;
 var context;
@@ -21,6 +20,7 @@ var voxelMapSize;
 var voxelGenerationAxisList;
 var voxelGenerationOffset;
 var isGeneratingVoxels = false;
+var nextTimerEventTime = 0;
 
 // May be 2D, 3D, or 4D.
 function Pos(coords) {
@@ -398,7 +398,7 @@ function regenerateVoxelSubset() {
     while (true) {
         var tempDate = new Date();
         var tempTime = tempDate.getTime() / 1000;
-        if (tempTime - tempStartTime > 0.5 / framesPerSecond) {
+        if (tempTime - tempStartTime > 0.1) {
             break;
         }
         tempPos.set(voxelGenerationAxisList[3]);
@@ -559,6 +559,8 @@ function keyUpEvent(event) {
 }
 
 function timerEvent() {
+    var tempDate = new Date();
+    var tempStartTime = tempDate.getTime() / 1000;
     if (!viewRotDirection.isZero()) {
         var tempOffset = viewRotDirection.copy();
         tempOffset.scale(0.1);
@@ -573,6 +575,10 @@ function timerEvent() {
         drawAllVoxels();
         shouldRedrawVoxels = false;
     }
+    var tempDate = new Date();
+    var tempEndTime = tempDate.getTime() / 1000;
+    var tempDuration = tempEndTime - tempStartTime;
+    nextTimerEventTime = tempEndTime + tempDuration * 0.5;
 }
 
 function initializeApplication() {
@@ -585,7 +591,7 @@ function initializeApplication() {
     canvas.style.width = Math.floor(canvasSize / 2);
     canvas.style.height = Math.floor(canvasSize / 2);
     
-    setInterval(timerEvent, 1000 / framesPerSecond);
+    setInterval(timerEvent, 50);
     
     window.onkeydown = keyDownEvent;
     window.onkeyup = keyUpEvent;
