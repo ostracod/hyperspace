@@ -560,7 +560,11 @@ function keyUpEvent(event) {
 
 function timerEvent() {
     var tempDate = new Date();
-    var tempStartTime = tempDate.getTime() / 1000;
+    var tempTime = tempDate.getTime() / 1000;
+    if (tempTime < nextTimerEventTime) {
+        return;
+    }
+    var tempStartTime = tempTime;
     if (!viewRotDirection.isZero()) {
         var tempOffset = viewRotDirection.copy();
         tempOffset.scale(0.1);
