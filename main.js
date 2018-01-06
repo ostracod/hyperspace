@@ -6,7 +6,7 @@ var framesPerSecond = 10;
 var canvasSize = 800;
 var canvas;
 var context;
-var voxelPixelSize = 50;
+var voxelPixelSize = 30;
 var voxelPixelBorderSize = 4;
 var voxelList = [];
 var viewRot;
@@ -14,6 +14,8 @@ var viewRotDirection;
 var shouldRedrawVoxels = true;
 var hypercubeRot;
 var hypercubeOffset = 0;
+var voxelGenerationRange = 2;
+var voxelGenerationResolution = 0.125;
 
 // May be 2D, 3D, or 4D.
 function Pos(coords) {
@@ -101,6 +103,18 @@ Pos.prototype.convertToColor = function() {
         tempBlue = 192;
     }
     return "rgb(" + tempRed + ", " + tempGreen + ", " + tempBlue + ")";
+}
+
+Pos.prototype.isInHypercube = function() {
+    var index = 0;
+    while (index < this.coords.length) {
+        var tempValue = this.coords[index];
+        if (tempValue < -1 || tempValue > 1) {
+            return false;
+        }
+        index += 1;
+    }
+    return true;
 }
 
 // May be 2D, 3D, or 4D.
@@ -202,7 +216,6 @@ function resolveEveryVoxelViewPos() {
     voxelList.sort(function(voxel1, voxel2) {
         var tempDepth1 = voxel1.viewPos.coords[2];
         var tempDepth2 = voxel2.viewPos.coords[2];
-        console.log(tempDepth1 + " " + tempDepth2);
         if (tempDepth1 < tempDepth2) {
             return 1;
         }
@@ -227,6 +240,54 @@ function drawAllVoxels() {
         tempVoxel.draw();
         index += 1;
     }
+}
+
+function regenerateVoxels() {
+    voxelList = [];
+    var voxelGenerationAxisList = [];
+    var index = 0;
+    while (index < 4) {
+        var tempCoords = [0, 0, 0, 0];
+        tempCoords[index] = 1;
+        var tempAxis = new Pos(tempCoords);
+        tempAxis.rotate(hypercubeRot);
+        voxelGenerationAxisList.push(tempAxis);
+        index += 1;
+    }
+    var voxelGenerationOffset = new Pos([
+        -voxelGenerationRange,
+        -voxelGenerationRange,
+        -voxelGenerationRange
+    ]);
+    var tempPos = new Pos([0, 0, 0, 0]);
+    var tempOffset = new Pos([0, 0, 0, 0]);
+    while (true) {
+        tempPos.set(voxelGenerationAxisList[3]);
+        tempPos.scale(hypercubeOffset);
+        var index = 0;
+        while (index < 3) {
+            tempOffset.set(voxelGenerationAxisList[index]);
+            tempOffset.scale(voxelGenerationOffset.coords[index]);
+            tempPos.add(tempOffset);
+            index += 1;
+        }
+        if (tempPos.isInHypercube()) {
+            new Voxel(voxelGenerationOffset.copy());
+        }
+        voxelGenerationOffset.coords[0] += voxelGenerationResolution;
+        if (voxelGenerationOffset.coords[0] > voxelGenerationRange) {
+            voxelGenerationOffset.coords[0] = -voxelGenerationRange;
+            voxelGenerationOffset.coords[1] += voxelGenerationResolution;
+            if (voxelGenerationOffset.coords[1] > voxelGenerationRange) {
+                voxelGenerationOffset.coords[1] = -voxelGenerationRange;
+                voxelGenerationOffset.coords[2] += voxelGenerationResolution;
+                if (voxelGenerationOffset.coords[2] > voxelGenerationRange) {
+                    break;
+                }
+            }
+        }
+    }
+    shouldRedrawVoxels = true;
 }
 
 function resetViewRot() {
@@ -257,8 +318,7 @@ function sliderChangeEvent() {
             index += 1;
         }
         document.getElementById("offsetLabel").innerHTML = tempOffset;
-        // TODO: Generate cross section voxels.
-        
+        regenerateVoxels();
     }
 }
 
@@ -358,16 +418,7 @@ function initializeApplication() {
     window.onkeydown = keyDownEvent;
     window.onkeyup = keyUpEvent;
     
-    new Voxel(new Pos([-1, -1, -1]));
-    new Voxel(new Pos([1, -1, -1]));
-    new Voxel(new Pos([-1, 1, -1]));
-    new Voxel(new Pos([1, 1, -1]));
-    new Voxel(new Pos([-1, -1, 1]));
-    new Voxel(new Pos([1, -1, 1]));
-    new Voxel(new Pos([-1, 1, 1]));
-    new Voxel(new Pos([1, 1, 1]));
-    
-    sliderChangeEvent();
+    regenerateVoxels();
     
 }
 
