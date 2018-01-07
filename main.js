@@ -5,7 +5,7 @@
 var canvasSize = 800;
 var canvas;
 var context;
-var voxelPixelSize = 14;
+var voxelPixelSize = 28;
 var voxelList = [];
 var viewRot;
 var viewRotDirection;
@@ -13,7 +13,7 @@ var shouldRedrawVoxels = true;
 var hypercubeRot;
 var hypercubeOffset = 0;
 var voxelGenerationRange = 2;
-var voxelGenerationResolution = 0.04;
+var voxelGenerationResolution = 0.08;
 var dummyVoxel;
 var voxelMap;
 var voxelMapSize;
@@ -141,7 +141,7 @@ Pos.prototype.isNearHypercubeFace = function() {
     var index = 0;
     while (index < this.coords.length) {
         var tempValue = this.coords[index];
-        if (Math.abs(tempValue) > 0.9) {
+        if (Math.abs(tempValue) > 1 - 0.1 * voxelGenerationResolution / 0.04) {
             tempCount += 1;
         }
         index += 1;
@@ -476,9 +476,13 @@ function sliderChangeEvent() {
     }
     var tempRot = new Rot(tempAngleList);
     var tempOffset = document.getElementById("offsetSlider").value;
-    if (!hypercubeRot.equals(tempRot) || hypercubeOffset != tempOffset) {
+    var tempSize = document.getElementById("voxelSizeSlider").value;
+    if (!hypercubeRot.equals(tempRot) || hypercubeOffset != tempOffset
+            || voxelGenerationResolution != tempSize) {
         hypercubeRot = tempRot;
         hypercubeOffset = tempOffset;
+        voxelGenerationResolution = tempSize;
+        voxelPixelSize = 14 * voxelGenerationResolution / 0.04;
         var index = 0;
         while (index < 6) {
             var tempAngle = tempAngleList[index];
@@ -486,6 +490,7 @@ function sliderChangeEvent() {
             index += 1;
         }
         document.getElementById("offsetLabel").innerHTML = tempOffset;
+        document.getElementById("voxelSizeLabel").innerHTML = voxelGenerationResolution;
         regenerateVoxels();
     }
 }
