@@ -20,11 +20,22 @@
             <canvas id="canvas" style="border: 1px #000000 solid;">
         </p>
         <p>
+            <div style="display: inline-block; width: 400px; height: 20px; background: #888888;">
+                <div id="generationProgress" style="display: inline-block; width: 20px; height: 20px; background: #00CC00;"></div>
+            </div>
+        </p>
+        <p>
             Use WASDQE to rotate the view. <button onclick="resetViewRot();">Reset View Rotation</button>
         </p>
         <p>
+            Voxel count: <span id="voxelCount">0</span>
+        </p>
+        <p>
             <input id="shouldShadeEdges" type="checkbox" checked="checked" onchange="checkboxChangeEvent();"/> Shade edges
-        </p
+        </p>
+        <p>
+            <input id="shouldDrawWhileGenerating" type="checkbox" checked="checked" onchange="checkboxChangeEvent();"/> Draw while generating voxels
+        </p>
         <p>
             <input id="angle0Slider" type="range" min="0" max="6.283" step="0.001" value="0" class="slider" onchange="sliderChangeEvent();">
             WX angle: <span id="angle0Label">0</span> rad

@@ -22,6 +22,7 @@ var voxelGenerationOffset;
 var isGeneratingVoxels = false;
 var nextTimerEventTime = 0;
 var shouldShadeEdges = true;
+var shouldDrawWhileGenerating = true;
 
 // May be 2D, 3D, or 4D.
 function Pos(coords) {
@@ -442,6 +443,9 @@ function regenerateVoxelSubset() {
             }
         }
     }
+    var tempWidth = Math.round(400 * voxelGenerationOffset.coords[1] / voxelMapSize);
+    document.getElementById("generationProgress").style.width = tempWidth;
+    document.getElementById("voxelCount").innerHTML = voxelList.length;
 }
 
 function regenerateVoxels() {
@@ -500,8 +504,12 @@ function sliderChangeEvent() {
 }
 
 function checkboxChangeEvent() {
-    shouldShadeEdges = document.getElementById("shouldShadeEdges").checked;
-    shouldRedrawVoxels = true;
+    shouldDrawWhileGenerating = document.getElementById("shouldDrawWhileGenerating").checked;
+    var tempValue = document.getElementById("shouldShadeEdges").checked;
+    if ((!!tempValue) ^ (!!shouldShadeEdges)) {
+        shouldShadeEdges = tempValue;
+        shouldRedrawVoxels = true;
+    }
 }
 
 function keyDownEvent(event) {
@@ -590,7 +598,14 @@ function timerEvent() {
         shouldRedrawVoxels = true;
     }
     if (shouldRedrawVoxels) {
-        drawAllVoxels();
+        if (!isGeneratingVoxels || shouldDrawWhileGenerating) {
+            drawAllVoxels();
+        } else {
+            clearCanvas();
+            context.font = "60px Arial";
+            context.fillStyle = "#000000";
+            context.fillText("Generating voxels...", 40, 100);
+        }
         shouldRedrawVoxels = false;
     }
     var tempDate = new Date();
