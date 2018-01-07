@@ -21,6 +21,7 @@ var voxelGenerationAxisList;
 var voxelGenerationOffset;
 var isGeneratingVoxels = false;
 var nextTimerEventTime = 0;
+var shouldShadeEdges = true;
 
 // May be 2D, 3D, or 4D.
 function Pos(coords) {
@@ -99,7 +100,7 @@ Pos.prototype.rotate = function(rot) {
 
 // Only works with 3D positions right now.
 // The range of each coordinate should be from -1 to 1.
-Pos.prototype.convertToColor = function() {
+Pos.prototype.convertToColor = function(scale) {
     var tempRed = 64 + Math.round((this.coords[0] + 1) * 65);
     var tempGreen = 64 + Math.round((this.coords[1] + 1) * 64);
     var tempBlue = 64 + Math.round((this.coords[2] + 1) * 64);
@@ -121,6 +122,9 @@ Pos.prototype.convertToColor = function() {
     if (tempBlue > 192) {
         tempBlue = 192;
     }
+    tempRed = Math.round(tempRed * scale);
+    tempGreen = Math.round(tempGreen * scale);
+    tempBlue = Math.round(tempBlue * scale);
     return "rgb(" + tempRed + ", " + tempGreen + ", " + tempBlue + ")";
 }
 
@@ -203,13 +207,10 @@ viewRot = new Rot([0, 0, 0]);
 viewRotDirection = new Rot([0, 0, 0]);
 hypercubeRot = new Rot([0, 0, 0, 0, 0, 0]);
 
-function Voxel(pos, color) {
+function Voxel(pos, shade) {
     this.pos = pos;
-    if (color === null) {
-        this.color = this.pos.convertToColor();
-    } else {
-        this.color = color;
-    }
+    this.color = this.pos.convertToColor(1);
+    this.shadeColor = this.pos.convertToColor(shade);
     this.viewPos = this.pos.copy();
     voxelList.push(this);
 }
@@ -241,7 +242,11 @@ Voxel.prototype.resolveViewPos = function() {
 Voxel.prototype.draw = function() {
     var tempPosX = this.viewPos.coords[0];
     var tempPosY = this.viewPos.coords[1];
-    context.fillStyle = this.color;
+    if (shouldShadeEdges) {
+        context.fillStyle = this.shadeColor;
+    } else {
+        context.fillStyle = this.color;
+    }
     context.fillRect(
         Math.round(tempPosX - voxelPixelSize / 2),
         Math.round(tempPosY - voxelPixelSize / 2),
@@ -412,13 +417,12 @@ function regenerateVoxelSubset() {
             index += 1;
         }
         if (tempPos.isInHypercube()) {
-            var tempColor;
             if (tempPos.isNearHypercubeFace()) {
-                tempColor = "#000000";
+                tempShade = 0.5;
             } else {
-                tempColor = null;
+                tempShade = 1;
             }
-            var tempVoxel = new Voxel(tempVoxelPos.copy(), tempColor);
+            var tempVoxel = new Voxel(tempVoxelPos.copy(), tempShade);
             setVoxelMapItem(voxelGenerationOffset, tempVoxel);
         } else {
             setVoxelMapItem(voxelGenerationOffset, null);
@@ -493,6 +497,11 @@ function sliderChangeEvent() {
         document.getElementById("voxelSizeLabel").innerHTML = voxelGenerationResolution;
         regenerateVoxels();
     }
+}
+
+function checkboxChangeEvent() {
+    shouldShadeEdges = document.getElementById("shouldShadeEdges").checked;
+    shouldRedrawVoxels = true;
 }
 
 function keyDownEvent(event) {
