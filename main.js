@@ -516,11 +516,11 @@ function keyDownEvent(event) {
     var keyCode = event.which;
     // A.
     if (keyCode == 65) {
-        viewRotDirection.angles[1] = 1;
+        viewRotDirection.angles[1] = -1;
     }
     // D.
     if (keyCode == 68) {
-        viewRotDirection.angles[1] = -1;
+        viewRotDirection.angles[1] = 1;
     }
     // W.
     if (keyCode == 87) {
@@ -544,13 +544,13 @@ function keyUpEvent(event) {
     var keyCode = event.which;
     // A.
     if (keyCode == 65) {
-        if (viewRotDirection.angles[1] > 0) {
+        if (viewRotDirection.angles[1] < 0) {
             viewRotDirection.angles[1] = 0;
         }
     }
     // D.
     if (keyCode == 68) {
-        if (viewRotDirection.angles[1] < 0) {
+        if (viewRotDirection.angles[1] > 0) {
             viewRotDirection.angles[1] = 0;
         }
     }
